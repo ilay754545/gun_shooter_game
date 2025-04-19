@@ -215,6 +215,10 @@ function update() {
   if (keys["a"]) player.x -= player.speed;
   if (keys["d"]) player.x += player.speed;
 
+  // Clamp player position to stay within the visible screen
+  player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+  player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+
   // Mobile movement
   if (isMobile() && (Math.abs(moveDir.x) > 10 || Math.abs(moveDir.y) > 10)) {
       const len = Math.hypot(moveDir.x, moveDir.y);
