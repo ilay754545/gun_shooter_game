@@ -207,13 +207,25 @@ document.getElementById('shootBtn').addEventListener('touchstart', e => {
     shoot();
 });
 
-function update() {
+let lastFrameTime = performance.now();
+
+function loop() {
+    if (!gameStarted) return;
+    const now = performance.now();
+    const delta = Math.min((now - lastFrameTime) / 16.6667, 2); // 1 = 60fps, clamp to avoid spikes
+    lastFrameTime = now;
+    update(delta);
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function update(delta = 1) {
   if (gameOver) return;
 
-  if (keys["w"]) player.y -= player.speed;
-  if (keys["s"]) player.y += player.speed;
-  if (keys["a"]) player.x -= player.speed;
-  if (keys["d"]) player.x += player.speed;
+  if (keys["w"]) player.y -= player.speed * delta;
+  if (keys["s"]) player.y += player.speed * delta;
+  if (keys["a"]) player.x -= player.speed * delta;
+  if (keys["d"]) player.x += player.speed * delta;
 
   // Clamp player position to stay within the visible screen
   player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
@@ -222,8 +234,8 @@ function update() {
   // Mobile movement
   if (isMobile() && (Math.abs(moveDir.x) > 10 || Math.abs(moveDir.y) > 10)) {
       const len = Math.hypot(moveDir.x, moveDir.y);
-      player.x += (moveDir.x/len) * player.speed;
-      player.y += (moveDir.y/len) * player.speed;
+      player.x += (moveDir.x/len) * player.speed * delta;
+      player.y += (moveDir.y/len) * player.speed * delta;
   }
 
   if (score > 0 && score % 2000 === 0 && !window.bossSpawned) {
@@ -234,8 +246,8 @@ function update() {
   }
 
   bullets.forEach(b => {
-    b.x += b.dx;
-    b.y += b.dy;
+    b.x += b.dx * delta;
+    b.y += b.dy * delta;
   });
 
   // Update muzzle flashes
@@ -261,8 +273,8 @@ function update() {
 
   enemies.forEach((e, ei) => {
     const angle = Math.atan2(player.y - e.y, player.x - e.x);
-    e.x += Math.cos(angle) * e.speed;
-    e.y += Math.sin(angle) * e.speed;
+    e.x += Math.cos(angle) * e.speed * delta;
+    e.y += Math.sin(angle) * e.speed * delta;
 
     const dist = Math.hypot(player.x - e.x, player.y - e.y);
     if (dist < player.size + e.size) {
@@ -276,7 +288,7 @@ function update() {
   });
 
   bosses.forEach((boss, bi) => {
-    boss.pattern(boss);
+    boss.pattern(boss, delta);
 
     const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
     if (dist < player.size + boss.size) {
@@ -377,8 +389,8 @@ function update() {
     const dy = player.y - robot.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 50) {
-        robot.x += dx / dist * 2;
-        robot.y += dy / dist * 2;
+        robot.x += dx / dist * 2 * delta;
+        robot.y += dy / dist * 2 * delta;
     }
     // Shoot at nearest enemy
     if (robot.cooldown > 0) robot.cooldown--;
@@ -766,11 +778,4 @@ function draw() {
   } else {
     document.getElementById('respawnBtn').style.display = 'none';
   }
-}
-
-function loop() {
-    if (!gameStarted) return;
-    update();
-    draw();
-    requestAnimationFrame(loop);
 }
