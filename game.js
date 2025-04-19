@@ -1,3 +1,9 @@
+// GUN Shooter Game
+// Version: 1.0.0
+// A top-down shooter game with multiple weapons, bosses, robots, and visual effects.
+// Developed by Ilay
+// Enjoy and have fun!
+
 window.canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
