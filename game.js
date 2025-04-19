@@ -168,6 +168,45 @@ function resetGame() {
 
 document.getElementById('respawnBtn').onclick = resetGame;
 
+// Responsive canvas for mobile
+function resizeCanvas() {
+    let w = window.innerWidth, h = window.innerHeight;
+    canvas.width = w;
+    canvas.height = h;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Show mobile controls if on mobile
+function isMobile() {
+    return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+if (isMobile()) {
+    document.getElementById('mobileControls').style.display = 'flex';
+}
+
+// Mobile joystick and shoot button logic
+let joystickActive = false, joystickStart = {x:0, y:0};
+let moveDir = {x:0, y:0};
+const joystick = document.getElementById('joystick');
+joystick.addEventListener('touchstart', e => {
+    joystickActive = true;
+    joystickStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+});
+joystick.addEventListener('touchmove', e => {
+    if (!joystickActive) return;
+    const dx = e.touches[0].clientX - joystickStart.x;
+    const dy = e.touches[0].clientY - joystickStart.y;
+    moveDir.x = dx; moveDir.y = dy;
+});
+joystick.addEventListener('touchend', e => {
+    joystickActive = false;
+    moveDir = {x:0, y:0};
+});
+document.getElementById('shootBtn').addEventListener('touchstart', e => {
+    shoot();
+});
+
 function update() {
   if (gameOver) return;
 
@@ -175,6 +214,13 @@ function update() {
   if (keys["s"]) player.y += player.speed;
   if (keys["a"]) player.x -= player.speed;
   if (keys["d"]) player.x += player.speed;
+
+  // Mobile movement
+  if (isMobile() && (Math.abs(moveDir.x) > 10 || Math.abs(moveDir.y) > 10)) {
+      const len = Math.hypot(moveDir.x, moveDir.y);
+      player.x += (moveDir.x/len) * player.speed;
+      player.y += (moveDir.y/len) * player.speed;
+  }
 
   if (score > 0 && score % 2000 === 0 && !window.bossSpawned) {
     spawnBoss();
