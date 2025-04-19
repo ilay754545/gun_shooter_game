@@ -36,9 +36,9 @@ let muzzleFlashes = [];
 
 // Safe zone properties
 const safeZone = {
-    x: 100,
-    y: 100,
-    size: 60,
+    x: 60,
+    y: 60,
+    size: 180, // Increased size for bigger safe zone
     activeTime: 5000, // ms
     timer: 0,
     isActive: false
@@ -257,24 +257,24 @@ function update(delta = 1) {
   const px = player.x, py = player.y;
   const inZone = px > safeZone.x && px < safeZone.x + safeZone.size && py > safeZone.y && py < safeZone.y + safeZone.size;
   if (inZone) {
-      if (!isInSafeZone) {
-          // Just entered
-          lastSafeZoneEntry = Date.now();
-          safeZone.timer = 0;
-      }
-      safeZone.timer = Date.now() - lastSafeZoneEntry;
       isInSafeZone = true;
-      safeZone.isActive = safeZone.timer < safeZone.activeTime;
+      safeZone.isActive = true;
   } else {
       isInSafeZone = false;
-      safeZone.timer = 0;
       safeZone.isActive = false;
   }
 
   enemies.forEach((e, ei) => {
+    // Calculate next position
     const angle = Math.atan2(player.y - e.y, player.x - e.x);
-    e.x += Math.cos(angle) * e.speed * delta;
-    e.y += Math.sin(angle) * e.speed * delta;
+    const nextX = e.x + Math.cos(angle) * e.speed * delta;
+    const nextY = e.y + Math.sin(angle) * e.speed * delta;
+    // Check if next position would be inside the safe zone
+    const inSafe = nextX > safeZone.x && nextX < safeZone.x + safeZone.size && nextY > safeZone.y && nextY < safeZone.y + safeZone.size;
+    if (!inSafe) {
+      e.x = nextX;
+      e.y = nextY;
+    }
 
     const dist = Math.hypot(player.x - e.x, player.y - e.y);
     if (dist < player.size + e.size) {
@@ -735,14 +735,6 @@ function draw() {
   ctx.lineWidth = 2;
   ctx.strokeRect(safeZone.x, safeZone.y, safeZone.size, safeZone.size);
   ctx.restore();
-  // Draw safe zone timer if inside
-  if (isInSafeZone) {
-      ctx.save();
-      ctx.fillStyle = 'white';
-      ctx.font = '16px Arial';
-      ctx.fillText('Safe: ' + Math.max(0, ((safeZone.activeTime - safeZone.timer) / 1000).toFixed(1)) + 's', safeZone.x, safeZone.y - 8);
-      ctx.restore();
-  }
 
   // Draw enemy hit effects
   enemyHitEffects.forEach(eff => {
