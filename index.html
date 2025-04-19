@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>GUN Shooter - משחק</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .owned-robot {
+      background: #b3ffb3;
+      border: 2px solid #33cc33;
+    }
+    #robotsShopMenu {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+<div id="welcomeScreen" style="position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);color:white;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:2em;">
+  ברוך הבא למשחק!
+  <br>
+  <span style="font-size:0.7em;">לחץ כדי להתחיל</span>
+</div>
+
+<canvas id="game" width="800" height="600"></canvas>
+<button id="shopBtn">חנות</button>
+<button id="robotsShopBtn">רובוטים</button>
+<button id="respawnBtn" style="display:none;position:absolute;left:50%;top:60%;transform:translate(-50%,0);font-size:2em;z-index:1001;">התחל מחדש</button>
+
+<div id="endScreen" style="position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);color:white;z-index:1002;display:none;align-items:center;justify-content:center;flex-direction:column;font-size:2em;">
+  ניצחת את הבוס!
+  <br>
+  <button id="endRestartBtn" style="font-size:1em;margin-top:20px;">התחל מחדש</button>
+</div>
+
+<div id="ownedList" style="color:white; position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px;">
+  <b>רשימה לדוגמה:</b>
+  <ul>
+    <li>פריט 1</li>
+    <li>פריט 2</li>
+    <li>פריט 3</li>
+  </ul>
+</div>
+
+<div id="shopMenu">
+  <div class="weapon-option" data-type="basic">רובה רגיל (חינם)</div>
+  <div class="weapon-option" data-type="fast">רובה מהיר (300 נקודות)</div>
+  <div class="weapon-option" data-type="power">רובה חזק (500 נקודות)</div>
+  <div class="weapon-option" data-type="shotgun">שוטגאן (700 נקודות)</div>
+  <div class="weapon-option" data-type="sniper">סנייפר (900 נקודות)</div>
+  <div class="weapon-option" data-type="spread">ספרד (600 נקודות)</div>
+  <div class="weapon-option" data-type="rapid">רפיד (800 נקודות)</div>
+  <div class="weapon-option" data-type="sword">חרב (400 נקודות)</div>
+  <div class="weapon-option" data-type="laser">לייזר (1200 נקודות)</div>
+  <div class="weapon-option" data-type="bouncer">באונסר (1000 נקודות)</div>
+  <div class="weapon-option" data-type="uzi">אוזי (1100 נקודות)</div>
+  <div class="weapon-option" data-type="bazooka">בזוקה (1500 נקודות)</div>
+  <div class="weapon-option" data-type="plasma">פלזמה (1800 נקודות)</div>
+  <div class="weapon-option" data-type="revolver">רבולבר (950 נקודות)</div>
+  <hr>
+  <div><b>רובוטים עוזרים</b></div>
+  <div class="robot-option" data-type="basic-robot">רובוט בסיסי (1000 נקודות)</div>
+  <div class="robot-option" data-type="rapid-robot">רובוט מהיר (2000 נקודות)</div>
+  <div class="robot-option" data-type="sniper-robot">רובוט סנייפר (2500 נקודות)</div>
+  <div class="robot-option" data-type="shotgun-robot">רובוט שוטגאן (2200 נקודות)</div>
+  <div id="shopMessage" style="color:red;"></div>
+  <br>
+  <button onclick="document.getElementById('shopMenu').style.display='none'">סגור</button>
+</div>
+
+<div id="robotsShopMenu" style="display:none;">
+  <div><b>רובוטים עוזרים</b></div>
+  <div class="robot-option" data-type="basic-robot">רובוט בסיסי (1000 נקודות)</div>
+  <div class="robot-option" data-type="rapid-robot">רובוט מהיר (2000 נקודות)</div>
+  <div class="robot-option" data-type="sniper-robot">רובוט סנייפר (2500 נקודות)</div>
+  <div class="robot-option" data-type="shotgun-robot">רובוט שוטגאן (2200 נקודות)</div>
+  <div class="robot-option" data-type="mini-robot">רובוט מיני (500 נקודות)</div>
+  <div class="robot-option" data-type="scout-robot">רובוט סקאוט (750 נקודות)</div>
+  <div id="robotsShopMessage" style="color:rgb(0, 0, 255);"></div>
+  <br>
+  <button onclick="document.getElementById('robotsShopMenu').style.display='none'">סגור</button>
+</div>
+
+<script src="game.js"></script>
+<script src="boss.js"></script>
+<script src="entities.js"></script>
+<script src="input.js"></script>
+<script src="shop.js"></script>
+</body>
+</html>
