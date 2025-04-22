@@ -46,6 +46,9 @@ const safeZone = {
 let lastSafeZoneEntry = 0;
 let isInSafeZone = false;
 
+// Support multiple safe zones
+window.safeZones = [safeZone];
+
 // Ensure robots are spawned at game start if any are owned
 if (typeof ownedRobots !== 'undefined') {
     spawnOwnedRobots();
@@ -255,14 +258,16 @@ function update(delta = 1) {
 
   // Safe zone logic
   const px = player.x, py = player.y;
-  const inZone = px > safeZone.x && px < safeZone.x + safeZone.size && py > safeZone.y && py < safeZone.y + safeZone.size;
-  if (inZone) {
-      isInSafeZone = true;
-      safeZone.isActive = true;
-  } else {
-      isInSafeZone = false;
-      safeZone.isActive = false;
-  }
+  let inAnyZone = false;
+  window.safeZones.forEach(sz => {
+    if (px > sz.x && px < sz.x + sz.size && py > sz.y && py < sz.y + sz.size) {
+      sz.isActive = true;
+      inAnyZone = true;
+    } else {
+      sz.isActive = false;
+    }
+  });
+  isInSafeZone = inAnyZone;
 
   enemies.forEach((e, ei) => {
     // Calculate next position
@@ -271,7 +276,17 @@ function update(delta = 1) {
     const nextY = e.y + Math.sin(angle) * e.speed * delta;
     // Check if next position would be inside the safe zone
     const inSafe = nextX > safeZone.x && nextX < safeZone.x + safeZone.size && nextY > safeZone.y && nextY < safeZone.y + safeZone.size;
-    if (!inSafe) {
+    // Check wall collision (line)
+    let collidesWall = false;
+    if (window.walls) {
+      for (const wall of window.walls) {
+        if (circleLineCollides(nextX, nextY, e.size, wall.x1, wall.y1, wall.x2, wall.y2)) {
+          collidesWall = true;
+          break;
+        }
+      }
+    }
+    if (!inSafe && !collidesWall) {
       e.x = nextX;
       e.y = nextY;
     }
@@ -288,6 +303,24 @@ function update(delta = 1) {
   });
 
   bosses.forEach((boss, bi) => {
+    // Calculate next position
+    const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+    const nextX = boss.x + Math.cos(angle) * boss.speed * delta;
+    const nextY = boss.y + Math.sin(angle) * boss.speed * delta;
+    // Check if next position would be inside any safe zone
+    let inSafe = false;
+    if (window.safeZones) {
+      for (const sz of window.safeZones) {
+        if (nextX > sz.x && nextX < sz.x + sz.size && nextY > sz.y && nextY < sz.y + sz.size) {
+          inSafe = true;
+          break;
+        }
+      }
+    }
+    if (!inSafe) {
+      boss.x = nextX;
+      boss.y = nextY;
+    }
     boss.pattern(boss, delta);
 
     const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
@@ -452,14 +485,68 @@ function update(delta = 1) {
   }
 }
 
-// Add shooting event for player
-window.addEventListener('mousedown', function(e) {
+// Wall placement as lines
+window.walls = window.walls || [];
+window.placingWall = false;
+window.wallStart = null;
+
+// Listen for wall purchase
+if (typeof ownedWeapons !== 'undefined') {
+    const shopMenu = document.getElementById('shopMenu');
+    if (shopMenu) {
+        shopMenu.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('weapon-option') && e.target.getAttribute('data-type') === 'wall') {
+                window.placingWall = true;
+                window.wallStart = null;
+                shopMenu.style.display = 'none';
+            }
+        });
+    }
+}
+
+canvas.addEventListener('mousedown', function(e) {
+    if (window.placingWall) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        if (!window.wallStart) {
+            window.wallStart = { x, y };
+        } else {
+            // Store wall as a line
+            window.walls.push({ x1: window.wallStart.x, y1: window.wallStart.y, x2: x, y2: y });
+            // Add a new safe zone at the midpoint of the wall
+            const mx = (window.wallStart.x + x) / 2;
+            const my = (window.wallStart.y + y) / 2;
+            window.safeZones.push({
+                x: mx - 90, // 180x180 size like main safe zone
+                y: my - 90,
+                size: 180,
+                isActive: false
+            });
+            window.placingWall = false;
+            window.wallStart = null;
+        }
+        return;
+    }
+    // Add shooting event for player
     if (gameOver || !gameStarted) return;
     // Calculate angle
     const angle = Math.atan2(window.mouse.y - player.y, window.mouse.x - player.x);
     // Add muzzle flash for player
     muzzleFlashes.push({ x: player.x, y: player.y, angle, time: Date.now(), color: 'white', size: 22 });
 });
+
+// Helper: check if a circle (enemy) crosses a wall line
+function circleLineCollides(cx, cy, r, x1, y1, x2, y2) {
+    // Closest point on line segment to circle center
+    const dx = x2 - x1, dy = y2 - y1;
+    const l2 = dx*dx + dy*dy;
+    let t = ((cx - x1) * dx + (cy - y1) * dy) / l2;
+    t = Math.max(0, Math.min(1, t));
+    const px = x1 + t * dx, py = y1 + t * dy;
+    const dist = Math.hypot(cx - px, cy - py);
+    return dist < r + 6; // 6 is wall thickness/2
+}
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -726,15 +813,17 @@ function draw() {
     ctx.restore();
   });
 
-  // Draw safe zone
-  ctx.save();
-  ctx.globalAlpha = safeZone.isActive ? 0.4 : 0.15;
-  ctx.fillStyle = safeZone.isActive ? '#00ffcc' : '#888';
-  ctx.fillRect(safeZone.x, safeZone.y, safeZone.size, safeZone.size);
-  ctx.strokeStyle = '#00ffcc';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(safeZone.x, safeZone.y, safeZone.size, safeZone.size);
-  ctx.restore();
+  // Draw all safe zones
+  window.safeZones.forEach(sz => {
+    ctx.save();
+    ctx.globalAlpha = sz.isActive ? 0.4 : 0.15;
+    ctx.fillStyle = sz.isActive ? '#00ffcc' : '#888';
+    ctx.fillRect(sz.x, sz.y, sz.size, sz.size);
+    ctx.strokeStyle = '#00ffcc';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sz.x, sz.y, sz.size, sz.size);
+    ctx.restore();
+  });
 
   // Draw enemy hit effects
   enemyHitEffects.forEach(eff => {
@@ -750,6 +839,22 @@ function draw() {
       ctx.restore();
     }
   });
+
+  // Draw walls as thick lines
+  if (window.walls) {
+    window.walls.forEach(wall => {
+      ctx.save();
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = 0.95;
+      ctx.beginPath();
+      ctx.moveTo(wall.x1, wall.y1);
+      ctx.lineTo(wall.x2, wall.y2);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
 
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";

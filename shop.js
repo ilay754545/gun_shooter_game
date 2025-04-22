@@ -12,7 +12,8 @@ const weaponPrices = {
     uzi: 1100,
     bazooka: 1500,
     plasma: 1800,
-    revolver: 950
+    revolver: 950,
+    wall: 600
 };
 
 const robotPrices = {
