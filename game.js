@@ -711,6 +711,34 @@ function draw() {
     ctx.fillRect(0, -player.size * 0.06, player.size * 1.3, player.size * 0.12);
     ctx.fillStyle = '#b97a56';
     ctx.fillRect(-player.size * 0.18, -player.size * 0.13, player.size * 0.18, player.size * 0.26);
+  } else if (weaponType === 'flamethrower') {
+    ctx.fillStyle = '#ff9800';
+    ctx.fillRect(0, -player.size * 0.18, player.size * 1.2, player.size * 0.36);
+    ctx.fillStyle = '#fff176';
+    ctx.fillRect(player.size * 0.9, -player.size * 0.09, player.size * 0.4, player.size * 0.18);
+    ctx.beginPath();
+    ctx.arc(player.size * 1.2, 0, player.size * 0.18, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff5722';
+    ctx.fill();
+  } else if (weaponType === 'minigun') {
+    ctx.fillStyle = '#888';
+    ctx.fillRect(0, -player.size * 0.13, player.size * 1.3, player.size * 0.26);
+    ctx.fillStyle = '#222';
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(player.size * (0.7 + i * 0.18), -player.size * 0.09, player.size * 0.12, player.size * 0.18);
+    }
+  } else if (weaponType === 'railgun') {
+    ctx.fillStyle = '#607d8b';
+    ctx.fillRect(0, -player.size * 0.09, player.size * 1.6, player.size * 0.18);
+    ctx.fillStyle = '#00e6e6';
+    ctx.fillRect(player.size * 1.3, -player.size * 0.05, player.size * 0.3, player.size * 0.1);
+  } else if (weaponType === 'blaster') {
+    ctx.fillStyle = '#ab47bc';
+    ctx.fillRect(0, -player.size * 0.13, player.size * 1.1, player.size * 0.26);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(player.size * 1.1, 0, player.size * 0.18, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     // Default/basic/fast/power/spread/rapid
     ctx.fillStyle = '#444';
@@ -856,6 +884,55 @@ function draw() {
     });
   }
 
+  // Draw bullet trails
+  if (!window.bulletTrails) window.bulletTrails = [];
+  bullets.forEach(b => {
+    window.bulletTrails.push({ x: b.x, y: b.y, color: b.bounces !== undefined ? '#00e6e6' : 'red', time: Date.now() });
+  });
+  window.bulletTrails = window.bulletTrails.filter(pt => Date.now() - pt.time < 180);
+  window.bulletTrails.forEach(pt => {
+    ctx.save();
+    ctx.globalAlpha = 0.25 - 0.25 * ((Date.now() - pt.time) / 180);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Draw pulsing boss glow
+  bosses.forEach(boss => {
+    ctx.save();
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+    ctx.shadowColor = boss.color;
+    ctx.shadowBlur = 44 * pulse;
+    ctx.globalAlpha = 0.18 * pulse;
+    ctx.beginPath();
+    ctx.arc(boss.x, boss.y, boss.size * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Draw animated background grid
+  const gridSpacing = 60;
+  const gridOffset = (Date.now() / 20) % gridSpacing;
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = '#fff';
+  for (let x = -gridSpacing + gridOffset; x < canvas.width; x += gridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = -gridSpacing + gridOffset; y < canvas.height; y += gridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";
   ctx.fillText("נקודות: " + Math.floor(score), 10, 30);
@@ -876,3 +953,6 @@ function draw() {
     document.getElementById('respawnBtn').style.display = 'none';
   }
 }
+
+// Make all safe zones bigger
+window.safeZones.forEach(sz => { sz.size = 260; sz.x = sz.x - 40; sz.y = sz.y - 40; });
